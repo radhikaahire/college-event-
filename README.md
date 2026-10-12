@@ -48,7 +48,7 @@ A full-featured web application designed to streamline collegiate event coordina
 ### Steps
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/radhikaahire/College-Event-Management.git
+   git clone https://github.com/radhikaahire/college-event-.git
    ```
 2. **Move to Server Root**:
    Move the project folder into your XAMPP web root:
