@@ -2,31 +2,23 @@
 echo ========================================================
 echo Pushing College Event Management System to GitHub
 echo GitHub Account: https://github.com/radhikaahire
-echo Target Repo:    College-Event-Management
+echo Target Repo:    https://github.com/radhikaahire/college-event-.git
 echo ========================================================
 echo.
-echo Step 1: Make sure you have created the new repository on GitHub:
-echo         https://github.com/new
-echo         - Repository name: College-Event-Management
-echo         - Public or Private: Your choice
-echo         - Do NOT initialize with README (already created locally)
-echo.
-echo Press any key when the GitHub repository is created to push...
-pause >nul
+cd /d "C:\Users\radhika\Downloads\projects\College Event-20261012T171641Z-1-001"
 
-echo.
-echo Pushing code to GitHub...
+echo Pushing code to GitHub (main branch)...
 "C:\Git\cmd\git.exe" push -u origin main
 
 if %ERRORLEVEL% equ 0 (
     echo.
     echo ========================================================
-    echo SUCCESS! Code pushed to:
-    echo https://github.com/radhikaahire/College-Event-Management
+    echo SUCCESS! All code has been pushed to:
+    echo https://github.com/radhikaahire/college-event-
     echo ========================================================
 ) else (
     echo.
-    echo If sign-in failed, please retry or create the repo at https://github.com/new
+    echo If sign-in is required, please sign in via browser or run Login-To-GitHub.bat on Desktop.
 )
 
 echo.
