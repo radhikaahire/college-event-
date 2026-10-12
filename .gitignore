@@ -1,0 +1,17 @@
+# Operating System Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Compressed Archives
+*.zip
+*.7z
+*.tar.gz
+*.rar
+
+# Logs
+*.log
+
+# Sensitive environment configs (if any)
+.env

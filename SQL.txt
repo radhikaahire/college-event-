@@ -1,0 +1,74 @@
+-- DATABASE
+CREATE DATABASE college_event_management;
+USE college_event_management;
+
+-- 1. USERS (Login table for all roles)
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    role ENUM('admin','organizer','student') NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    status ENUM('active','inactive') DEFAULT 'active'
+);
+
+-- 2. ORGANIZERS / TEACHERS
+CREATE TABLE organizers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    department VARCHAR(100),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 3. STUDENTS
+CREATE TABLE students (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    roll_no VARCHAR(50),
+    department VARCHAR(100),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 4. EVENTS
+CREATE TABLE events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(150) NOT NULL,
+    description TEXT,
+    event_date DATE NOT NULL,
+    venue VARCHAR(100),
+    created_by INT NOT NULL,
+    status ENUM('open','closed','completed') DEFAULT 'open',
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 5. EVENT PARTICIPATION
+CREATE TABLE event_participation (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id INT NOT NULL,
+    student_id INT NOT NULL,
+    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    approval_status ENUM('pending','approved','rejected') DEFAULT 'pending',
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    UNIQUE (event_id, student_id)
+);
+
+-- 6. WINNERS
+CREATE TABLE winners (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id INT NOT NULL,
+    student_id INT NOT NULL,
+    position ENUM('1st','2nd','3rd') NOT NULL,
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+);
+
+-- 7. ANNOUNCEMENTS
+CREATE TABLE announcements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id INT NOT NULL,
+    message TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+);
