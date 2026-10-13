@@ -1,0 +1,401 @@
+/**
+ * College Event Management System (CEMS)
+ * Unified Hybrid Design System: Festival Dynamic & Operational Precision
+ */
+
+:root {
+  /* Color Palette */
+  --c-primary: #4f46e5;
+  --c-primary-hover: #4338ca;
+  --c-primary-subtle: #eef2ff;
+  --c-primary-border: #c7d2fe;
+
+  --c-secondary: #0ea5e9;
+  --c-secondary-subtle: #f0f9ff;
+
+  --c-accent-coral: #f43f5e;
+  --c-accent-coral-subtle: #fff1f2;
+  --c-accent-amber: #f59e0b;
+  --c-accent-amber-subtle: #fffbeb;
+  --c-accent-emerald: #10b981;
+  --c-accent-emerald-subtle: #ecfdf5;
+
+  --c-dark: #0f172a;
+  --c-text-main: #1e293b;
+  --c-text-muted: #64748b;
+  --c-border: #e2e8f0;
+  --c-border-light: #f1f5f9;
+
+  --c-bg: #f8fafc;
+  --c-surface: #ffffff;
+  --c-surface-card: #ffffff;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* Radii & Shadows */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+
+  --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 4px 12px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
+  --shadow-hover: 0 12px 24px -4px rgba(15, 23, 42, 0.1), 0 4px 8px -4px rgba(15, 23, 42, 0.05);
+
+  /* Transitions */
+  --t-standard: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base Reset & Typography */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--c-bg);
+  color: var(--c-text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+main, .main-content {
+  flex: 1 0 auto;
+}
+
+footer {
+  flex-shrink: 0;
+}
+
+/* Accessibility Focus Ring */
+*:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
+
+/* Navigation Bar */
+.navbar-cems {
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+  box-shadow: var(--shadow-subtle);
+  padding: 0.85rem 1.5rem;
+}
+
+.navbar-cems .navbar-brand {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--c-primary) !important;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.navbar-cems .nav-link {
+  font-weight: 500;
+  color: var(--c-text-muted);
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-sm);
+  transition: var(--t-standard);
+}
+
+.navbar-cems .nav-link:hover,
+.navbar-cems .nav-link.active {
+  color: var(--c-primary);
+  background: var(--c-primary-subtle);
+}
+
+.user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  background: var(--c-primary-subtle);
+  color: var(--c-primary);
+  font-size: 0.825rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* Card Styles */
+.cems-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-card);
+  transition: var(--t-standard);
+}
+
+.cems-card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--c-primary-border);
+}
+
+/* Operational Metric Card */
+.metric-box {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: var(--t-standard);
+}
+
+.metric-box:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+.metric-box .metric-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.metric-box .metric-val {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--c-dark);
+}
+
+.metric-box .metric-lbl {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--c-text-muted);
+  margin-top: 0.35rem;
+}
+
+/* Festival Event Cards (Student & Public) */
+.event-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: var(--t-standard);
+  height: 100%;
+}
+
+.event-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--c-primary-border);
+}
+
+.event-card .card-banner {
+  height: 140px;
+  background: linear-gradient(135deg, var(--c-primary), #6366f1, #3b82f6);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  padding: 1rem;
+  color: white;
+}
+
+.event-card .card-category-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--c-dark);
+  backdrop-filter: blur(4px);
+}
+
+.event-card .card-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+
+.event-card .event-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.825rem;
+  color: var(--c-text-muted);
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Category Badges */
+.badge-tech { background: #e0e7ff; color: #4338ca; }
+.badge-cultural { background: #fce7f3; color: #be185d; }
+.badge-sports { background: #ecfdf5; color: #047857; }
+.badge-workshop { background: #fef3c7; color: #b45309; }
+
+/* Status Badges */
+.badge-status {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.badge-status-approved { background: var(--c-accent-emerald-subtle); color: var(--c-accent-emerald); }
+.badge-status-pending { background: var(--c-accent-amber-subtle); color: #b45309; }
+.badge-status-rejected { background: var(--c-accent-coral-subtle); color: var(--c-accent-coral); }
+.badge-status-open { background: var(--c-accent-emerald-subtle); color: var(--c-accent-emerald); }
+.badge-status-closed { background: #f1f5f9; color: #64748b; }
+
+/* Buttons */
+.btn-cems-primary {
+  background: var(--c-primary);
+  color: white;
+  border: 1px solid transparent;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 1.2rem;
+  transition: var(--t-standard);
+}
+
+.btn-cems-primary:hover {
+  background: var(--c-primary-hover);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.btn-cems-secondary {
+  background: var(--c-surface);
+  color: var(--c-text-main);
+  border: 1px solid var(--c-border);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 1.2rem;
+  transition: var(--t-standard);
+}
+
+.btn-cems-secondary:hover {
+  background: var(--c-bg);
+  color: var(--c-text-main);
+  border-color: #cbd5e1;
+}
+
+/* Hero Section (Public Landing) */
+.fest-hero {
+  background: radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.12), transparent 40%),
+              radial-gradient(circle at 10% 80%, rgba(14, 165, 233, 0.1), transparent 50%),
+              var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+  padding: 4.5rem 0 3.5rem;
+  position: relative;
+}
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  background: var(--c-primary-subtle);
+  color: var(--c-primary);
+  font-weight: 600;
+  font-size: 0.825rem;
+  border-radius: 9999px;
+  margin-bottom: 1.25rem;
+}
+
+.fest-hero h1 {
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--c-dark);
+}
+
+.countdown-box {
+  display: inline-flex;
+  gap: 0.75rem;
+  background: var(--c-surface);
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--c-border);
+  box-shadow: var(--shadow-card);
+}
+
+.countdown-segment {
+  text-align: center;
+  min-width: 44px;
+}
+
+.countdown-segment .num {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--c-primary);
+  line-height: 1;
+}
+
+.countdown-segment .lbl {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+}
+
+/* Tables */
+.table-cems {
+  width: 100%;
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-cems th {
+  background: var(--c-bg);
+  font-size: 0.775rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-text-muted);
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.table-cems td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--c-border-light);
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+
+.table-cems tr:last-child td {
+  border-bottom: none;
+}
+
+/* Animations & Reduced Motion */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.anim-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,147 +1,182 @@
 <?php
 session_start();
-include "includes/db.php";
+require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/helpers.php';
+
+// If already authenticated, redirect to appropriate role dashboard
+if (!empty($_SESSION['user_id']) && !empty($_SESSION['role'])) {
+    header("Location: " . $_SESSION['role'] . "_dashboard.php");
+    exit;
+}
 
 $error = "";
 
-if (isset($_POST['login'])) {
-    $username = mysqli_real_escape_string($conn, $_POST['username']);
-    $password = $_POST['password'];
+if (isset($_GET['error']) && $_GET['error'] === 'deactivated') {
+    $error = "Your account has been deactivated. Please contact the administrator.";
+}
 
-    $sql = "SELECT * FROM users 
-            WHERE username='$username' 
-            AND password='$password' 
-            AND status='active'";
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
 
-    $res = mysqli_query($conn, $sql);
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-    if (mysqli_num_rows($res) == 1) {
-        $row = mysqli_fetch_assoc($res);
-
-        $_SESSION['user_id'] = $row['id'];
-        $_SESSION['role']    = $row['role'];
-
-        header("Location: ".$row['role']."_dashboard.php");
-        exit;
+    if (empty($username) || empty($password)) {
+        $error = "Please enter both username and password.";
     } else {
-        $error = "Invalid username or password";
+        // Safe prepared statement query
+        $stmt = mysqli_prepare($conn, "SELECT id, role, password, status FROM users WHERE username = ? LIMIT 1");
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "s", $username);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+
+            if ($user = mysqli_fetch_assoc($result)) {
+                $is_password_valid = false;
+
+                // 1. Try Bcrypt verification
+                if (password_verify($password, $user['password'])) {
+                    $is_password_valid = true;
+                }
+                // 2. Fallback to legacy plaintext check & automatic transparent migration
+                elseif ($user['password'] === $password) {
+                    $is_password_valid = true;
+                    // Automatically rehash and update in DB
+                    $new_hash = password_hash($password, PASSWORD_BCRYPT);
+                    $up_stmt = mysqli_prepare($conn, "UPDATE users SET password = ? WHERE id = ?");
+                    if ($up_stmt) {
+                        mysqli_stmt_bind_param($up_stmt, "si", $new_hash, $user['id']);
+                        mysqli_stmt_execute($up_stmt);
+                        mysqli_stmt_close($up_stmt);
+                    }
+                }
+
+                if ($is_password_valid) {
+                    if ($user['status'] !== 'active') {
+                        $error = "Your account has been deactivated. Please contact the administrator.";
+                    } else {
+                        // Prevent session fixation
+                        session_regenerate_id(true);
+
+                        $_SESSION['user_id'] = (int)$user['id'];
+                        $_SESSION['role']    = $user['role'];
+                        $_SESSION['username'] = $username;
+
+                        // Redirect to role dashboard
+                        $redirect = match($user['role']) {
+                            'admin' => 'admin_dashboard.php',
+                            'organizer' => 'organizer_dashboard.php',
+                            default => 'student_dashboard.php'
+                        };
+
+                        header("Location: " . $redirect);
+                        exit;
+                    }
+                } else {
+                    $error = "Invalid username or password.";
+                }
+            } else {
+                $error = "Invalid username or password.";
+            }
+            mysqli_stmt_close($stmt);
+        } else {
+            $error = "A system error occurred. Please try again later.";
+        }
     }
 }
+
+$page_title = "Sign In";
 ?>
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Login | College Event Management</title>
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<style>
-body{
-    min-height:100vh;
-    background:linear-gradient(135deg,#eef2ff,#f8fafc);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-family:'Segoe UI',sans-serif;
-}
-
-.login-card{
-    width:420px;
-    background:white;
-    border-radius:20px;
-    padding:40px;
-    box-shadow:0 20px 40px rgba(0,0,0,.12);
-    animation:slideUp 1s ease;
-}
-
-@keyframes slideUp{
-    from{opacity:0; transform:translateY(40px)}
-    to{opacity:1; transform:translateY(0)}
-}
-
-.login-card h2{
-    font-weight:700;
-    color:#2563eb;
-}
-
-.form-control{
-    border-radius:12px;
-    padding:12px;
-}
-
-.form-control:focus{
-    box-shadow:0 0 0 0.2rem rgba(37,99,235,.25);
-    border-color:#2563eb;
-}
-
-.btn-login{
-    background:#2563eb;
-    border:none;
-    border-radius:12px;
-    padding:12px;
-    font-weight:600;
-    transition:.3s;
-}
-
-.btn-login:hover{
-    background:#1e40af;
-    transform:translateY(-2px);
-}
-
-.fade-error{
-    animation:shake .4s;
-}
-
-@keyframes shake{
-    0%{transform:translateX(0)}
-    25%{transform:translateX(-5px)}
-    50%{transform:translateX(5px)}
-    75%{transform:translateX(-5px)}
-    100%{transform:translateX(0)}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo e($page_title); ?> | College Event System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="assets/css/theme.css" rel="stylesheet">
+    <style>
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08), transparent 40%),
+                    radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.08), transparent 40%),
+                    var(--c-bg);
+        padding: 1.5rem;
+      }
+      .login-box {
+        width: 100%;
+        max-width: 440px;
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        border-radius: var(--radius-xl);
+        padding: 2.5rem;
+        box-shadow: var(--shadow-card);
+      }
+    </style>
 </head>
-
 <body>
 
-<div class="login-card <?php if($error) echo 'fade-error'; ?>">
+<div class="login-box anim-fade-in">
+    <div class="text-center mb-4">
+        <a href="index.php" class="text-decoration-none">
+            <span class="fs-1 d-block mb-1 text-primary"><i class="bi bi-mortarboard-fill"></i></span>
+            <h3 class="fw-bold text-dark tracking-tight mb-1">College Event Portal</h3>
+        </a>
+        <p class="text-muted small">Sign in to your campus account to continue</p>
+    </div>
 
-    <h2 class="text-center mb-2">College Event System</h2>
-    <p class="text-center text-muted mb-4">
-        Login to continue
-    </p>
-
-    <?php if ($error) { ?>
-        <div class="alert alert-danger text-center">
-            <?php echo $error; ?>
+    <?php if ($error): ?>
+        <div class="alert alert-danger d-flex align-items-center gap-2 mb-4 py-2 px-3 small border-0" role="alert">
+            <i class="bi bi-exclamation-circle-fill fs-6"></i>
+            <div><?php echo e($error); ?></div>
         </div>
-    <?php } ?>
+    <?php endif; ?>
 
-    <form method="post">
+    <form method="post" action="login.php" novalidate>
+        <?php echo csrf_field(); ?>
 
         <div class="mb-3">
-            <label class="form-label fw-semibold">Username</label>
-            <input type="text" name="username" class="form-control"
-                   placeholder="Enter username" required>
+            <label class="form-label fw-semibold small text-muted">Username</label>
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                <input type="text" name="username" class="form-control border-start-0 ps-0"
+                       placeholder="e.g. admin or student1" required autofocus
+                       value="<?php echo e($_POST['username'] ?? ''); ?>">
+            </div>
         </div>
 
         <div class="mb-4">
-            <label class="form-label fw-semibold">Password</label>
-            <input type="password" name="password" class="form-control"
-                   placeholder="Enter password" required>
+            <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label fw-semibold small text-muted mb-0">Password</label>
+            </div>
+            <div class="input-group mt-1">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-key"></i></span>
+                <input type="password" name="password" class="form-control border-start-0 ps-0"
+                       placeholder="••••••••" required>
+            </div>
         </div>
 
-        <button type="submit" name="login" class="btn btn-login w-100 text-white">
-            Login
+        <button type="submit" name="login" class="btn btn-cems-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2">
+            <span>Sign In to Portal</span>
+            <i class="bi bi-arrow-right"></i>
         </button>
-
     </form>
 
-    <p class="text-center text-muted mt-4 small">
-        © College Event Management System
-    </p>
-
+    <div class="mt-4 pt-3 border-top text-center text-muted small">
+        <div class="d-flex justify-content-center gap-3">
+            <a href="index.php" class="text-decoration-none text-muted">
+                <i class="bi bi-arrow-left me-1"></i> Public Fest Home
+            </a>
+            <span class="text-muted">&bull;</span>
+            <a href="view_events.php" class="text-decoration-none text-muted">
+                Explore Events
+            </a>
+        </div>
+    </div>
 </div>
 
 </body>
