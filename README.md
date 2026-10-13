@@ -27,25 +27,25 @@ The application employs a dual-experience visual architecture:
 
 ---
 
-## 🔒 Enterprise-Grade Security Hardening
+## 🔒 Security Hardening
 
-* **Bcrypt Password Cryptography**: Legacy plaintext passwords are automatically and transparently migrated to salted Bcrypt hashes upon login. All new accounts are hashed prior to storage.
-* **100% SQL Injection Immunity**: All database queries are executed through parameterized prepared statements (`mysqli_prepare()`, `mysqli_stmt_bind_param()`).
-* **Universal CSRF Protection**: Every state-modifying action (registrations, approvals, status toggles, announcements, winner awards) requires a cryptographically validated session CSRF token.
-* **Insecure Direct Object Reference (IDOR) Defense**: Strict multi-tenant authorization prevents coordinators from tampering with other organizers' events, and students from inspecting other students' private passes or certificates.
-* **Stored XSS Elimination**: All dynamic database outputs are sanitized using the global `e()` helper function (`htmlspecialchars`).
+* Passwords are stored as bcrypt hashes; legacy plaintext credentials are migrated when used.
+* SQL queries in the reviewed workflows use prepared statements.
+* State-changing actions use CSRF validation, and organizer/student access checks are applied to private workflows.
+* Pass QR codes use random, database-backed tokens and can be checked independently at `verify_pass.php`.
+* These safeguards reduce risk but do not guarantee that every vulnerability is eliminated.
 
 ---
 
-## 👥 Role Workflows & Default Demo Accounts
+## 👥 Role Workflows & Seed Accounts
 
-| Role | Username | Password | Access Capabilities |
-| :--- | :--- | :--- | :--- |
-| **Admin** | `admin` | `12345` | System control, 6 KPI cards, Chart.js metrics, atomic user onboarding (Student & Organizer) |
-| **Organizer** | `teacher1` | `12345` | Event creation, status toggling (Open/Closed), participant approval queue, CSV export, announcements, podium winner declaration |
-| **Student** | `student1` | `12345` | Event browsing, 1-click application, application tracker, E-Ticket Pass with QR code, Certificate download |
+The SQL file contains sample role records for local development, but their passwords are intentionally replaced with random bcrypt hashes. No default password is published. Set a local password before logging in:
 
-*Note: All legacy passwords (`12345`) are automatically upgraded to Bcrypt hashes upon first authentication.*
+1. Generate a bcrypt hash in your terminal: `php -r "echo password_hash('Choose-A-Local-Password', PASSWORD_DEFAULT), PHP_EOL;"`
+2. Copy the generated hash and run this SQL in your local development database: `UPDATE users SET password = 'PASTE_BCRYPT_HASH_HERE' WHERE username IN ('admin', 'teacher1', 'student1');`
+3. For the automated suite, set the same password in your shell before running it. PowerShell: `$env:CEMS_TEST_PASSWORD="Choose-A-Local-Password"; php tests/test_suite.php`
+
+Use unique passwords, keep this application local while testing, and never use development accounts on a live deployment.
 
 ---
 
@@ -70,7 +70,7 @@ College-Event/
 │   ├── helpers.php                # Security helpers: e(), csrf_token(), verify_csrf(), require_role()
 │   └── navbar.php                 # Responsive role-aware navigation bar
 ├── tests/
-│   └── test_suite.php             # Automated 27-point verification test suite (100% PASS)
+│   └── test_suite.php             # Automated 27-point verification test suite
 ├── add_organizer.php              # Admin: Atomic organizer onboarding transaction
 ├── add_student.php                # Admin: Atomic student onboarding transaction
 ├── admin_dashboard.php            # Admin: Control center with KPIs and Chart.js
@@ -87,7 +87,10 @@ College-Event/
 ├── pending_requests.php           # Seamless redirect to manage_participants.php?status=pending
 ├── post_announcement.php          # Organizer: Broadcast notice with ownership check
 ├── student_dashboard.php          # Student: Application tracker, E-pass & certificates
-├── ticket.php                     # Digital E-Ticket Pass with live QR code
+├── ticket.php                     # Digital E-Ticket Pass with secure QR token
+├── verify_pass.php                # Public token-based pass verification
+├── migrations/
+│   └── 2026-10-13-add-qr-token.sql # Existing database upgrade for QR verification
 ├── view_events.php                # Student: Event discovery & 1-click registration
 ├── winners.php                    # Public: Hall of Fame podium results
 ├── BUG_TRACKER.md                 # 15 confirmed bugs cataloged & verified fixed
@@ -98,6 +101,10 @@ College-Event/
 ```
 
 ---
+
+## 🔑 Database Upgrade for Secure QR Passes
+
+For an existing database, run `migrations/2026-10-13-add-qr-token.sql` once in phpMyAdmin or the MariaDB client before opening a ticket. Fresh imports of `college_event_management.sql` already include the column. Set `CEMS_BASE_URL` to the canonical application URL in deployed environments so generated QR links point to the correct host.
 
 ## 🏃 Running the Application Locally
 

@@ -9,6 +9,8 @@
 
 $base_url = "http://localhost/College-Event";
 $results = [];
+// Set CEMS_TEST_PASSWORD locally to the password configured for the seeded test accounts.
+$test_password = (string)(getenv('CEMS_TEST_PASSWORD') ?: '');
 
 function make_request($url, $method = 'GET', $data = [], &$session_id = null) {
     $ch = curl_init($url);
@@ -122,7 +124,7 @@ record_test($results, "TC-06", "Security", "Invalid credentials rejected with er
 // Test CSRF token enforcement on login (tampered token)
 $csrf_tamper = make_request("{$base_url}/login.php", 'POST', [
     'username' => 'admin',
-    'password' => '12345',
+    'password' => $test_password,
     'csrf_token' => 'tampered_token_xyz'
 ], $sess_guest);
 $tamper_rejected = ($csrf_tamper['code'] === 403 || strpos($csrf_tamper['body'], 'Security validation failed') !== false);
@@ -143,7 +145,7 @@ $adm_csrf = extract_csrf($adm_page['body']);
 // 2. Submit valid Admin login
 $adm_login = make_request("{$base_url}/login.php", 'POST', [
     'username' => 'admin',
-    'password' => '12345',
+    'password' => $test_password,
     'csrf_token' => $adm_csrf
 ], $sess_admin);
 $adm_success = ($adm_login['code'] === 302 && strpos($adm_login['location'], 'admin_dashboard.php') !== false);
@@ -196,7 +198,7 @@ $org_csrf = extract_csrf($org_page['body']);
 
 $org_login = make_request("{$base_url}/login.php", 'POST', [
     'username' => 'teacher1',
-    'password' => '12345',
+    'password' => $test_password,
     'csrf_token' => $org_csrf
 ], $sess_organizer);
 $org_success = ($org_login['code'] === 302 && strpos($org_login['location'], 'organizer_dashboard.php') !== false);
@@ -258,7 +260,7 @@ $stu_csrf = extract_csrf($stu_page['body']);
 
 $stu_login = make_request("{$base_url}/login.php", 'POST', [
     'username' => 'student1',
-    'password' => '12345',
+    'password' => $test_password,
     'csrf_token' => $stu_csrf
 ], $sess_student);
 $stu_success = ($stu_login['code'] === 302 && strpos($stu_login['location'], 'student_dashboard.php') !== false);
@@ -291,33 +293,44 @@ record_test($results, "TC-22", "Student", "Duplicate registration attempt cleanl
 // -----------------------------------------------------------------------------
 // MODULE 6: PARTICIPANT APPROVAL WORKFLOW
 // -----------------------------------------------------------------------------
-// Organizer approves the new student application
+// Organizer approves the new student application. Missing IDs must fail, never pass.
 $part_page = make_request("{$base_url}/manage_participants.php?status=pending&event_id={$created_ev_id}", 'GET', [], $sess_organizer);
 $part_csrf = extract_csrf($part_page['body']);
-preg_match('/name="participation_id"\s+value="([0-9]+)"/i', $part_page['body'], $pid_match);
+preg_match('/name="participation_id"\\s+value="([0-9]+)"/i', $part_page['body'], $pid_match);
 $pid = !empty($pid_match[1]) ? (int)$pid_match[1] : 0;
 
 $approve_success = false;
-if ($pid > 0) {
+$approve_details = "No pending participation ID was found.";
+if ($pid > 0 && !empty($part_csrf)) {
     $approve_res = make_request("{$base_url}/manage_participants.php", 'POST', [
         'csrf_token' => $part_csrf,
         'participation_id' => $pid,
         'action' => 'approve'
     ], $sess_organizer);
-    $approve_success = ($approve_res['code'] === 302);
-} else {
-    $approve_success = true;
+
+    // A valid pass page can only be shown for an approved registration.
+    $approval_check = make_request("{$base_url}/ticket.php?reg_id={$pid}", 'GET', [], $sess_student);
+    $approve_success = ($approve_res['code'] === 302
+        && $approval_check['code'] === 200
+        && strpos($approval_check['body'], 'ticket-qrcode') !== false);
+    $approve_details = "POST code: {$approve_res['code']}; pass code: {$approval_check['code']}; participation ID: {$pid}";
 }
-record_test($results, "TC-23", "Organizer", "Participant review & one-click approval", $approve_success, "Approved participation ID: {$pid}");
+record_test($results, "TC-23", "Organizer", "Participant review & one-click approval", $approve_success, $approve_details);
 
 // -----------------------------------------------------------------------------
 // MODULE 7: SHOWSTOPPER FEATURES (DIGITAL TICKET PASS & CERTIFICATE)
 // -----------------------------------------------------------------------------
 // 1. Digital Ticket Pass Generation
-$ticket_res = make_request("{$base_url}/ticket.php?reg_id=6", 'GET', [], $sess_student);
+$ticket_res = make_request("{$base_url}/ticket.php?reg_id={$pid}", 'GET', [], $sess_student);
 $has_qr = strpos($ticket_res['body'], 'ticket-qrcode') !== false;
 $has_pass_ref = strpos($ticket_res['body'], 'CEMS-') !== false;
-record_test($results, "TC-24", "Showstopper", "Digital E-Ticket Pass with offline QR code generator", $ticket_res['code'] === 200 && $has_qr && $has_pass_ref, "Code: {$ticket_res['code']}");
+$has_verifier = strpos($ticket_res['body'], 'verify_pass.php?token=') !== false;
+$verified_ok = false;
+if ($ticket_res['code'] === 200 && preg_match('/verify_pass\\.php\\?token=([a-f0-9]{64})/', $ticket_res['body'], $token_match)) {
+    $verify_res = make_request("{$base_url}/verify_pass.php?token=" . $token_match[1], 'GET', [], $sess_guest);
+    $verified_ok = ($verify_res['code'] === 200 && strpos($verify_res['body'], 'Valid Event Pass') !== false);
+}
+record_test($results, "TC-24", "Showstopper", "Digital E-Ticket Pass with verifiable QR link", $pid > 0 && $ticket_res['code'] === 200 && $has_qr && $has_pass_ref && $has_verifier && $verified_ok, "Pass code: {$ticket_res['code']}; verification: " . ($verified_ok ? 'valid' : 'failed') . "; participation ID: {$pid}");
 
 // 2. IDOR Protection on Tickets: A different student cannot view student1's ticket (reg_id 6)
 $sess_other_student = null;
@@ -329,15 +342,15 @@ make_request("{$base_url}/login.php", 'POST', [
     'csrf_token' => $stu2_csrf
 ], $sess_other_student);
 
-$idor_ticket = make_request("{$base_url}/ticket.php?reg_id=6", 'GET', [], $sess_other_student);
-$idor_blocked = ($idor_ticket['code'] === 302 && strpos($idor_ticket['location'], 'student_dashboard.php') !== false);
+$idor_ticket = make_request("{$base_url}/ticket.php?reg_id={$pid}", 'GET', [], $sess_other_student);
+$idor_blocked = ($pid > 0 && $idor_ticket['code'] === 302 && strpos($idor_ticket['location'], 'student_dashboard.php') !== false);
 record_test($results, "TC-25", "Security/IDOR", "Cross-student ticket inspection blocked (IDOR)", $idor_blocked, "Location: {$idor_ticket['location']}");
 
 // 3. Official Certificate Generation
-$cert_res = make_request("{$base_url}/certificate.php?reg_id=6", 'GET', [], $sess_student);
+$cert_res = make_request("{$base_url}/certificate.php?reg_id={$pid}", 'GET', [], $sess_student);
 $has_cert_title = strpos($cert_res['body'], 'Certificate of') !== false;
 $has_print_style = strpos($cert_res['body'], '@media print') !== false;
-record_test($results, "TC-26", "Showstopper", "Printable Academic Certificate of Achievement", $cert_res['code'] === 200 && $has_cert_title && $has_print_style, "Code: {$cert_res['code']}");
+record_test($results, "TC-26", "Showstopper", "Printable Academic Certificate of Achievement", $pid > 0 && $cert_res['code'] === 200 && $has_cert_title && $has_print_style, "Code: {$cert_res['code']}; participation ID: {$pid}");
 
 // -----------------------------------------------------------------------------
 // MODULE 8: SESSION LOGOUT & CLEANUP
