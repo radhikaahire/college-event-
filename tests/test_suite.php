@@ -10,7 +10,7 @@
 $base_url = "http://localhost/College-Event";
 $results = [];
 // Set CEMS_TEST_PASSWORD locally to the password configured for the seeded test accounts.
-$test_password = (string)(getenv('CEMS_TEST_PASSWORD') ?: '');
+$test_password = (string)(getenv('CEMS_TEST_PASSWORD') ?: '12345');
 
 function make_request($url, $method = 'GET', $data = [], &$session_id = null) {
     $ch = curl_init($url);
