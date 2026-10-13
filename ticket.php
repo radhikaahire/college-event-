@@ -18,6 +18,7 @@ if ($reg_id <= 0) {
 $stmt = mysqli_prepare($conn, "
     SELECT ep.id AS reg_id, ep.approval_status, ep.applied_at,
            e.id AS event_id, e.title AS event_title, e.description, e.event_date, e.venue, e.created_by,
+           ep.qr_token,
            s.id AS student_id, s.user_id AS student_user_id, s.name AS student_name, s.roll_no, s.department,
            u.username
     FROM event_participation ep
@@ -61,8 +62,48 @@ if ($ticket['approval_status'] !== 'approved') {
     exit;
 }
 
-// Verification token hash
-$verify_hash = strtoupper(substr(hash('sha256', "CEMS-PASS-{$ticket['reg_id']}-{$ticket['student_id']}-{$ticket['event_id']}"), 0, 10));
+// Create a cryptographically random, database-backed pass token once per registration.
+$qr_token = (string)($ticket['qr_token'] ?? '');
+if (!preg_match('/^[a-f0-9]{64}$/', $qr_token)) {
+    $candidate_token = bin2hex(random_bytes(32));
+    $token_stmt = mysqli_prepare($conn, "UPDATE event_participation SET qr_token = ? WHERE id = ? AND qr_token IS NULL");
+    mysqli_stmt_bind_param($token_stmt, "si", $candidate_token, $reg_id);
+    mysqli_stmt_execute($token_stmt);
+    mysqli_stmt_close($token_stmt);
+
+    $token_stmt = mysqli_prepare($conn, "SELECT qr_token FROM event_participation WHERE id = ?");
+    mysqli_stmt_bind_param($token_stmt, "i", $reg_id);
+    mysqli_stmt_execute($token_stmt);
+    $token_result = mysqli_stmt_get_result($token_stmt);
+    $token_row = mysqli_fetch_assoc($token_result);
+    mysqli_stmt_close($token_stmt);
+    $qr_token = (string)($token_row['qr_token'] ?? '');
+}
+if (!preg_match('/^[a-f0-9]{64}$/', $qr_token)) {
+    http_response_code(500);
+    exit('Unable to create a secure event pass. Please contact the administrator.');
+}
+
+// Short display code is only a label; the random token in the QR URL is the verifier.
+$verify_hash = strtoupper(substr($qr_token, 0, 10));
+
+// Configure CEMS_BASE_URL in the server environment for a fixed canonical URL.
+// The fallback supports local XAMPP while validating the Host header.
+$base_url = rtrim((string)getenv('CEMS_BASE_URL'), '/');
+if ($base_url === '') {
+    $host = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
+    if (!preg_match('/^[a-zA-Z0-9.-]+(?::[0-9]{1,5})?$/', $host)) {
+        $host = 'localhost';
+    }
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $base_path = str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/ticket.php')));
+    $base_path = rtrim($base_path, '/');
+    if ($base_path === '.' || $base_path === '/') {
+        $base_path = '';
+    }
+    $base_url = $scheme . '://' . $host . $base_path;
+}
+$verify_url = $base_url . '/verify_pass.php?token=' . rawurlencode($qr_token);
 
 include __DIR__ . '/includes/header.php';
 include __DIR__ . '/includes/navbar.php';
@@ -192,14 +233,11 @@ include __DIR__ . '/includes/navbar.php';
 <script src="assets/qrcode.min.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    var qrData = JSON.stringify({
-        cems_ref: "CEMS-<?php echo $ticket['reg_id']; ?>",
-        student: "<?php echo addslashes($ticket['student_name']); ?>",
-        roll: "<?php echo addslashes($ticket['roll_no']); ?>",
-        event: "<?php echo addslashes($ticket['event_title']); ?>",
-        date: "<?php echo $ticket['event_date']; ?>",
-        auth_hash: "<?php echo $verify_hash; ?>"
-    });
+    // JSON_HEX_* safely encodes the URL for the JavaScript context.
+    var qrData = <?php echo json_encode(
+        $verify_url,
+        JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_SLASHES
+    ); ?>;
 
     new QRCode(document.getElementById("ticket-qrcode"), {
         text: qrData,
