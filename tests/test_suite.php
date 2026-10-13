@@ -325,7 +325,12 @@ $ticket_res = make_request("{$base_url}/ticket.php?reg_id={$pid}", 'GET', [], $s
 $has_qr = strpos($ticket_res['body'], 'ticket-qrcode') !== false;
 $has_pass_ref = strpos($ticket_res['body'], 'CEMS-') !== false;
 $has_verifier = strpos($ticket_res['body'], 'verify_pass.php?token=') !== false;
-record_test($results, "TC-24", "Showstopper", "Digital E-Ticket Pass with verifiable QR link", $pid > 0 && $ticket_res['code'] === 200 && $has_qr && $has_pass_ref && $has_verifier, "Code: {$ticket_res['code']}; participation ID: {$pid}");
+$verified_ok = false;
+if ($ticket_res['code'] === 200 && preg_match('/verify_pass\\.php\\?token=([a-f0-9]{64})/', $ticket_res['body'], $token_match)) {
+    $verify_res = make_request("{$base_url}/verify_pass.php?token=" . $token_match[1], 'GET', [], $sess_guest);
+    $verified_ok = ($verify_res['code'] === 200 && strpos($verify_res['body'], 'Valid Event Pass') !== false);
+}
+record_test($results, "TC-24", "Showstopper", "Digital E-Ticket Pass with verifiable QR link", $pid > 0 && $ticket_res['code'] === 200 && $has_qr && $has_pass_ref && $has_verifier && $verified_ok, "Pass code: {$ticket_res['code']}; verification: " . ($verified_ok ? 'valid' : 'failed') . "; participation ID: {$pid}");
 
 // 2. IDOR Protection on Tickets: A different student cannot view student1's ticket (reg_id 6)
 $sess_other_student = null;
