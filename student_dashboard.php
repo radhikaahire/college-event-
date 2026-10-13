@@ -116,38 +116,44 @@ include __DIR__ . '/includes/navbar.php';
     <!-- 3 Key Metric KPI Boxes -->
     <div class="row g-3 mb-4">
         <div class="col-sm-4">
-            <div class="metric-box">
-                <div class="metric-icon-wrap" style="background:#eef2ff; color:#4f46e5;">
-                    <i class="bi bi-send-check"></i>
+            <a href="#my-applications" class="metric-box-clickable" title="View My Applications">
+                <div class="metric-box">
+                    <div class="metric-icon-wrap" style="background:#eef2ff; color:#4f46e5;">
+                        <i class="bi bi-send-check"></i>
+                    </div>
+                    <div class="metric-val"><?php echo $applied_count; ?></div>
+                    <div class="metric-lbl">Total Applications</div>
                 </div>
-                <div class="metric-val"><?php echo $applied_count; ?></div>
-                <div class="metric-lbl">Total Applications</div>
-            </div>
+            </a>
         </div>
 
         <div class="col-sm-4">
-            <div class="metric-box">
-                <div class="metric-icon-wrap" style="background:#ecfdf5; color:#10b981;">
-                    <i class="bi bi-ticket-perforated"></i>
+            <a href="#my-applications" class="metric-box-clickable" title="View Approved Event Passes">
+                <div class="metric-box">
+                    <div class="metric-icon-wrap" style="background:#ecfdf5; color:#10b981;">
+                        <i class="bi bi-ticket-perforated"></i>
+                    </div>
+                    <div class="metric-val"><?php echo $approved_count; ?></div>
+                    <div class="metric-lbl">Approved Event Passes</div>
                 </div>
-                <div class="metric-val"><?php echo $approved_count; ?></div>
-                <div class="metric-lbl">Approved Event Passes</div>
-            </div>
+            </a>
         </div>
 
         <div class="col-sm-4">
-            <div class="metric-box">
-                <div class="metric-icon-wrap" style="background:#fffbeb; color:#f59e0b;">
-                    <i class="bi bi-trophy"></i>
+            <a href="winners.php" class="metric-box-clickable" title="View Podium Medals in Hall of Fame">
+                <div class="metric-box">
+                    <div class="metric-icon-wrap" style="background:#fffbeb; color:#f59e0b;">
+                        <i class="bi bi-trophy"></i>
+                    </div>
+                    <div class="metric-val"><?php echo $my_wins_count; ?></div>
+                    <div class="metric-lbl">Podium Medals Won</div>
                 </div>
-                <div class="metric-val"><?php echo $my_wins_count; ?></div>
-                <div class="metric-lbl">Podium Medals Won</div>
-            </div>
+            </a>
         </div>
     </div>
 
     <!-- My Registered Events Tracker Section -->
-    <div class="cems-card mb-4">
+    <div class="cems-card mb-4" id="my-applications">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h5 class="fw-bold text-dark mb-1">My Event Applications</h5>

@@ -399,3 +399,35 @@ footer {
     scroll-behavior: auto !important;
   }
 }
+
+/* Clickable KPI Metric Box Tabs */
+.metric-box-clickable {
+  text-decoration: none !important;
+  display: block;
+  color: inherit !important;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: var(--t-standard);
+}
+
+.metric-box-clickable:hover {
+  color: inherit !important;
+  transform: translateY(-4px);
+}
+
+.metric-box-clickable:hover .metric-box {
+  box-shadow: var(--shadow-hover);
+  border-color: var(--c-primary-border);
+}
+
+.metric-box-clickable.active-tab .metric-box {
+  border: 2px solid var(--c-primary);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.18);
+  background: #ffffff;
+}
+
+.metric-box-clickable:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 3px;
+}
+
