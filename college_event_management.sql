@@ -76,7 +76,8 @@ CREATE TABLE `event_participation` (
   `event_id` int(11) NOT NULL,
   `student_id` int(11) NOT NULL,
   `applied_at` datetime DEFAULT current_timestamp(),
-  `approval_status` enum('pending','approved','rejected') DEFAULT 'pending'
+  `approval_status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `qr_token` char(64) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -148,12 +149,12 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `role`, `username`, `password`, `status`) VALUES
-(5, 'admin', 'admin', '12345', 'active'),
-(6, 'organizer', 'teacher1', '12345', 'active'),
-(7, 'student', 'student1', '12345', 'active'),
-(8, 'student', 'student2', '12345', 'active'),
-(9, 'student', 'ram', '12345', 'active'),
-(10, 'organizer', 'organizer', '12345', 'active');
+(5, 'admin', 'admin', '$2y$12$fThEL7hBHX3ti4ePhw1LbOTwhoVGeCatI.8jInmSRsHY.fh4lDYmS', 'active'),
+(6, 'organizer', 'teacher1', '$2y$12$.61E/w1p0wb5K2YpO72jR.u5cHefVMtelzp/zQRUsay.j6czE4Ttu', 'active'),
+(7, 'student', 'student1', '$2y$12$GvB4NtarJbxy4v.xxgetgeWWVnxNvsGCWfE4pbNtpFNZFLq2OLt76', 'active'),
+(8, 'student', 'student2', '$2y$12$JB1/QSwWaMcvL7Nu/3jV4u72F6UhI/pXBPls8A6VO.h4zBp4USNWi', 'active'),
+(9, 'student', 'ram', '$2y$12$T0fFXjP6qFclBawNJz0JPu4nRmkaUKg9YH1gEh9JloUtIScJ/.w4y', 'active'),
+(10, 'organizer', 'organizer', '$2y$12$PgEgTA0Ii33ctpJoXlvs0.D4AxuTTkpmlL5leHvonmYOANY3sfMhq', 'active');
 
 -- --------------------------------------------------------
 
@@ -199,6 +200,7 @@ ALTER TABLE `events`
 ALTER TABLE `event_participation`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `event_id` (`event_id`,`student_id`),
+  ADD UNIQUE KEY `uq_event_participation_qr_token` (`qr_token`),
   ADD KEY `student_id` (`student_id`);
 
 --
